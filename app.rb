@@ -6,8 +6,7 @@ class Application < Pavement::Base
       boolean :shout, default: false, description: "Use uppercase letters"
     end
     call do |name:, shout:|
-      message = "Hello, #{name}!"
-      shout ? message.upcase : message
+      greeting(name, shout)
     end
   end
 
@@ -16,8 +15,17 @@ class Application < Pavement::Base
     description "What this PicoRuby MCP demo exposes"
     mime_type "text/plain"
     read do
-      "demo-tape is a PicoRuby MCP server running on Cloudflare Workers."
+      about_text
     end
+  end
+
+  def greeting(name, shout)
+    message = "Hello, #{name}!"
+    shout ? message.upcase : message
+  end
+
+  def about_text
+    "demo-tape is a PicoRuby MCP server running on Cloudflare Workers."
   end
 end
 

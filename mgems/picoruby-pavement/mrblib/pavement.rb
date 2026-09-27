@@ -96,8 +96,8 @@ module Pavement
       result
     end
 
-    def invoke(arguments)
-      @handler.call(**@schema.prepare(arguments))
+    def invoke(arguments, context)
+      context.instance_exec(**@schema.prepare(arguments), &@handler)
     end
   end
 
@@ -133,8 +133,8 @@ module Pavement
       result
     end
 
-    def contents
-      { "uri" => @uri, "mimeType" => @mime_type || "text/plain", "text" => @reader.call.to_s }
+    def contents(context)
+      { "uri" => @uri, "mimeType" => @mime_type || "text/plain", "text" => context.instance_exec(&@reader).to_s }
     end
   end
 
@@ -155,7 +155,7 @@ module Pavement
       @resources[uri] = Resource.new(uri, &block)
     end
 
-    def call(env)
+    def call(env, context = Base.new(env))
       return response(404, { "error" => "Not found" }) unless env["PATH_INFO"] == "/mcp"
       return [405, { "allow" => "POST" }, []] unless env["REQUEST_METHOD"] == "POST"
       allowed_hosts = (ENV["MCP_ALLOWED_HOSTS"] || "localhost,127.0.0.1").split(",")
@@ -182,7 +182,7 @@ module Pavement
         return legacy_initialize(id, params)
       end
       if !modern_metadata?(params) && env["HTTP_MCP_PROTOCOL_VERSION"] != PROTOCOL_VERSION
-        return legacy_request(id, method, params, env["HTTP_MCP_PROTOCOL_VERSION"])
+        return legacy_request(id, method, params, env["HTTP_MCP_PROTOCOL_VERSION"], context)
       end
       meta = params["_meta"]
       return rpc_error(400, id, -32602, "Missing request metadata") unless meta.is_a?(Hash) && meta["io.modelcontextprotocol/clientCapabilities"].is_a?(Hash) && meta["io.modelcontextprotocol/protocolVersion"].is_a?(String)
@@ -201,7 +201,7 @@ module Pavement
       end
       return rpc_error(400, id, -32602, "name or uri is required") if (method == "tools/call" || method == "resources/read") && !name.is_a?(String)
 
-      result = dispatch(method, params)
+      result = dispatch(method, params, context)
       return rpc_error(404, id, -32601, "Method not found") if result == :method_not_found
       return rpc_error(400, id, -32602, "Unknown tool or resource") if result == :not_found
       response(200, { "jsonrpc" => "2.0", "id" => id, "result" => result })
@@ -213,7 +213,7 @@ module Pavement
       rpc_error(500, id, -32603, "Internal error")
     end
 
-    def dispatch(method, params)
+    def dispatch(method, params, context)
       result = case method
                when "server/discover"
                  { "supportedVersions" => [PROTOCOL_VERSION], "capabilities" => capabilities }
@@ -223,7 +223,7 @@ module Pavement
                  tool = @tools[params["name"]]
                  return :not_found unless tool
                  begin
-                   value = tool.invoke(params["arguments"] || {})
+                   value = tool.invoke(params["arguments"] || {}, context)
                    { "content" => [{ "type" => "text", "text" => value.to_s }], "isError" => false }
                  rescue InvalidInput
                    raise
@@ -237,7 +237,7 @@ module Pavement
                when "resources/read"
                  resource = @resources[params["uri"]]
                  return :not_found unless resource
-                 { "contents" => [resource.contents] }
+                 { "contents" => [resource.contents(context)] }
                else
                  return :method_not_found
                end
@@ -262,10 +262,10 @@ module Pavement
       response(200, { "jsonrpc" => "2.0", "id" => id, "result" => result })
     end
 
-    def legacy_request(id, method, params, version)
+    def legacy_request(id, method, params, version, context)
       version ||= LEGACY_VERSIONS.last
       return rpc_error(400, id, -32602, "Unsupported legacy protocol version") unless LEGACY_VERSIONS.include?(version)
-      result = method == "ping" ? {} : dispatch(method, params)
+      result = method == "ping" ? {} : dispatch(method, params, context)
       return rpc_error(404, id, -32601, "Method not found") if result == :method_not_found
       return rpc_error(400, id, -32602, "Unknown tool or resource") if result == :not_found
       result.delete("resultType")
@@ -296,6 +296,16 @@ module Pavement
   end
 
   class Base
+    attr_reader :env
+
+    def initialize(env)
+      @env = env
+    end
+
+    def call
+      self.class.application.call(env, self)
+    end
+
     def self.tool(name, &block)
       application.tool(name, &block)
     end
@@ -305,7 +315,7 @@ module Pavement
     end
 
     def self.call(env)
-      application.call(env)
+      new(env).call
     end
 
     def self.application

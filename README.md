@@ -32,19 +32,32 @@ class Application < Pavement::Base
       boolean :shout, default: false
     end
     call do |name:, shout:|
-      message = "Hello, #{name}!"
-      shout ? message.upcase : message
+      greeting(name, shout)
     end
   end
 
   resource "demo://about" do
     name "About demo-tape"
-    read { "A PicoRuby MCP server on Cloudflare Workers." }
+    read { about_text }
+  end
+
+  def greeting(name, shout)
+    message = "Hello, #{name}!"
+    shout ? message.upcase : message
+  end
+
+  def about_text
+    "A PicoRuby MCP server on Cloudflare Workers."
   end
 end
 
 Rackup::Handler::CloudflareWorker.run(Application)
 ```
+
+Each request runs `call` and `read` blocks on a fresh `Application` instance,
+so they can call its instance methods. `env` returns that request's Rack env
+hash. For example, `env["HTTP_HOST"]` reads the Host header, and
+`env["cloudflare.env"]` accesses configured Worker bindings.
 
 `input` currently supports `string`, `integer`, and `boolean` properties, plus
 `required`, `default`, and `description`. The gem turns these declarations into
