@@ -1,5 +1,7 @@
 require "picoruby/cloudflare/build"
 
+ENV["PICORUBY_USE_MRUBY_JSONRS"] = "1"
+
 MRuby::CrossBuild.new("worker") do |conf|
   conf.cloudflare_worker! do |cf|
     # Optional overrides, applied before build setup:

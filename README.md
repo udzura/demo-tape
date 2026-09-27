@@ -6,11 +6,15 @@ Ruby framework lives in [`mgems/picoruby-pavement`](mgems/picoruby-pavement), an
 
 ## Run locally
 
-Install Ruby 3.2 or later, Node.js supported by Wrangler, and Emscripten. Set
+Install Ruby 3.2 or later, Node.js supported by Wrangler, Emscripten, and a
+nightly Rust toolchain with the `wasm32-unknown-emscripten` target. The Worker
+uses `mruby-jsonrs` for JSON parsing and generation. Set
 `PICORUBY_ROOT` to a PicoRuby checkout with initialized submodules. The first
 build compiles PicoRuby to Wasm and can take several minutes.
 
 ```sh
+rustup toolchain install nightly
+rustup target add wasm32-unknown-emscripten --toolchain nightly
 export PICORUBY_ROOT=/path/to/picoruby
 bundle install
 npm install
