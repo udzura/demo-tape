@@ -1,34 +1,24 @@
-app = lambda do |env|
-  begin
-    value = case env["PATH_INFO"]
-    when "/kv"
-      kv = Cloudflare::KV.from_env(env, "CACHE_KV")
-      kv.put("greeting", "Hello from Cloudflare KV!", ttl: 60)
-      kv.get("greeting")
-    when "/queue"
-      Cloudflare::Queue.from_env(env, "EVENTS").send("Hello from PicoRuby!")
-      "Message sent to Cloudflare Queue!"
-    when "/durable-object"
-      store = Cloudflare::DurableObject.from_env(env, "OBJECTS")
-      store.put("example", { "message" => "Hello from a Durable Object!" })
-      store.get("example")["message"]
-    when "/access"
-      identity = env["cloudflare.identity"]
-      identity.email || "Access identity has no email"
-    else
-      ENV["GREETING"] || "Hello from PicoRuby on Cloudflare!"
+class Application < Pavement::Base
+  tool "hello" do
+    description "Greet someone from PicoRuby on Cloudflare Workers"
+    input do
+      string :name, required: true, description: "Name to greet"
+      boolean :shout, default: false, description: "Use uppercase letters"
     end
-    [200, { "content-type" => "text/plain; charset=utf-8" }, [value + "\n"]]
-  rescue => e
-    [500, { "content-type" => "text/plain; charset=utf-8" }, ["Internal Server Error:\n\t#{e.message}\n"]]
+    call do |name:, shout:|
+      message = "Hello, #{name}!"
+      shout ? message.upcase : message
+    end
+  end
+
+  resource "demo://about" do
+    name "About demo-tape"
+    description "What this PicoRuby MCP demo exposes"
+    mime_type "text/plain"
+    read do
+      "demo-tape is a PicoRuby MCP server running on Cloudflare Workers."
+    end
   end
 end
 
-# Apply Access middleware to the identity example.
-access_app = Rack::Builder.new do
-  use Rack::Cloudflare::Access
-  run app
-end
-Rackup::Handler::CloudflareWorker.run(lambda do |env|
-  env["PATH_INFO"] == "/access" ? access_app.call(env) : app.call(env)
-end)
+Rackup::Handler::CloudflareWorker.run(Application)

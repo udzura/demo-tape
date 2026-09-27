@@ -6,6 +6,7 @@
     "build": "bundle exec rake build",
     "generate:bindings": "bundle exec rake build",
     "dev": "wrangler dev",
+    "test:dev": "node test/mcp.mjs",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

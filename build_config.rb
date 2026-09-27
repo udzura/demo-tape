@@ -9,8 +9,7 @@ MRuby::CrossBuild.new("worker") do |conf|
     # cf.mruby_rack_mgem_revision = "<commit SHA>"
   end
 
-  # Add application mrbgems here, for example:
-  # conf.gem gemdir: File.join(__dir__, "vendor/my-gem")
+  conf.gem gemdir: File.join(__dir__, "mgems/picoruby-pavement")
 
   conf.worker_export(
     app: "app.rb",

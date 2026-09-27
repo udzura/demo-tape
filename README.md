@@ -1,89 +1,71 @@
 # demo-tape
 
-PicoRuby Rack application on Cloudflare Workers.
+A small MCP server written in PicoRuby and served by Cloudflare Workers. The
+Ruby framework lives in [`mgems/picoruby-pavement`](mgems/picoruby-pavement), and
+[`app.rb`](app.rb) defines a `hello` tool and a `demo://about` resource.
 
-1. Install Ruby >= 3.2 and Node.js (supported by Wrangler). On macOS, install Emscripten via Homebrew as shown below.
-2. Set `PICORUBY_ROOT` to a PicoRuby checkout with its submodules initialized.
-3. Run `bundle install` and `npm install`.
-4. Run `bundle exec rake doctor`, then `bundle exec rake`.
-5. Run `npm run dev`. Wrangler's custom build also runs Rake on startup and Ruby changes.
+## Run locally
+
+Install Ruby 3.2 or later, Node.js supported by Wrangler, and Emscripten. Set
+`PICORUBY_ROOT` to a PicoRuby checkout with initialized submodules. The first
+build compiles PicoRuby to Wasm and can take several minutes.
 
 ```sh
-brew install emscripten
-export PATH="$(brew --prefix emscripten)/bin:$PATH"
-emcc --version
+export PICORUBY_ROOT=/path/to/picoruby
+bundle install
+npm install
+npm run dev
 ```
 
-Emscripten 5.0.0 or later is accepted; 5.0.7 and Homebrew 6.0.9 are tested.
-Newer versions are accepted but not necessarily tested. If switching from emsdk,
-use a shell without `emsdk_env.sh` and unset `EMSDK`, `EM_CONFIG`, and `EM_CACHE`.
+Wrangler serves the MCP endpoint at `http://127.0.0.1:8787/mcp`. It runs the
+PicoRuby build on startup and watches `app.rb`, `build_config.rb`, and `mgems`.
+Run `npm run test:dev` in another terminal to exercise the live endpoint.
 
-The pinned Wrangler version is paired with compatibility date `2026-08-22`.
-Update and test them together; a dry-run alone does not start workerd.
-
-To use a local runtime checkout during development, set these attributes in the
-`cloudflare_worker!` block in `build_config.rb`:
+## Ruby DSL
 
 ```ruby
-conf.cloudflare_worker! do |cf|
-  cf.picoruby_cloudflare_worker_wasm_mgem_dir = "/path/to/picoruby-cloudflare-worker-wasm"
-  # Optional: use a local Rack checkout too.
-  cf.mruby_rack_mgem_dir = "/path/to/mruby-rack"
+class Application < Pavement::Base
+  tool "hello" do
+    description "Greet someone"
+    input do
+      string :name, required: true
+      boolean :shout, default: false
+    end
+    call do |name:, shout:|
+      message = "Hello, #{name}!"
+      shout ? message.upcase : message
+    end
+  end
+
+  resource "demo://about" do
+    name "About demo-tape"
+    read { "A PicoRuby MCP server on Cloudflare Workers." }
+  end
 end
+
+Rackup::Handler::CloudflareWorker.run(Application)
 ```
 
-The block receives the CrossBuild object itself and runs before build setup.
-Calling without a block is also supported. Both directory attributes default to `nil`, which selects the GitHub sources
-configured by the template gem. Override those refs in the same block using
-`cf.picoruby_cloudflare_worker_wasm_revision` and `cf.mruby_rack_mgem_revision`.
-Directory attributes take precedence over revision attributes; relative paths
-are resolved against `build_config.rb`. These sources are not selected through
-environment variables. The Worker source is pinned by the template gem; see its README for the current revision.
+`input` currently supports `string`, `integer`, and `boolean` properties, plus
+`required`, `default`, and `description`. The gem turns these declarations into
+JSON Schema and validates tool arguments before calling Ruby. The framework
+handles JSON-RPC and JSON responses for the MCP 2026-07-28 Streamable HTTP
+revision: `server/discover`, `tools/list`, `tools/call`, `resources/list`, and
+`resources/read`. It also accepts the 2025-03-26, 2025-06-18, and 2025-11-25
+Streamable HTTP handshake for current clients. This first demo uses JSON
+responses only; it does not implement prompts, SSE, or subscriptions.
 
-`build_config.rb` selects mrbgems and exports an ES module to `generated/worker/`.
-Do not edit generated files. The generated Wasm, JS and app bytecode are one unit;
-use Wrangler to bundle them, not a plain Node.js import of `src/index.js`.
+The endpoint accepts only `localhost` and `127.0.0.1` Host headers by default.
+For another hostname, set `MCP_ALLOWED_HOSTS` to a comma-separated list of
+hostnames. The endpoint has no authentication and is intended for local
+development. Add authentication before deploying a server that exposes private
+data or actions.
 
-`src/index.js` shows optional `rackEnv` and `afterRequest` hooks. Enable them in
-the `createWorker` options to add request-scoped, JSON-compatible values to
-Ruby's Rack env or inspect a snapshot after the app responds.
-`rackEnv(request, env, ctx)` returns an object. `afterRequest(request, env, ctx,
-rackEnv, response)` may return a replacement `Response` or `undefined` to keep
-the original response. Exceptions are logged by the generated Worker handler.
-These hooks require a Worker runtime with `handleRequestWithOptions` and ABI 8.
+## Build configuration
 
-Configure bindings in `wrangler.jsonc`; the build regenerates `bindings.js`.
-Ruby can use `env["cloudflare.env"].CACHE_KV` or
-`Cloudflare::KV.from_env(env, "CACHE_KV")`, and similarly `Cloudflare::Queue.from_env`.
-Durable Objects use `Cloudflare::DurableObject.from_env`; `put` accepts POJO,
-Hash, Array, or an object responding to `to_pojo`.
-String/JSON vars and secrets are accessible through Ruby `ENV`.
+`build_config.rb` adds the local mgem to the Worker build. The template gem pins
+its Worker and Rack mgems; see `build_config.rb` to override them with local
+checkouts during development. Do not edit `generated/worker/` directly.
 
-If this project was generated with `--bindings`, app.rb exposes `/kv`, `/queue`,
-`/durable-object` and `/access`
-examples and `.picoruby-cloudflare-template.json` tracks their generated state.
-Run `picoruby-cloudflare bindings .` with a newer template to refresh unedited
-binding examples. The command refuses to overwrite an edited app.rb or wrangler.jsonc.
-
-For `/access`, set `CF_ACCESS_TEAM` to your team name (not its URL) in Wrangler vars
-or .dev.vars, and send a `CF_Authorization` cookie issued by Access.
-`Rack::Cloudflare::Access.new(app, team: "my-team")` is Rack middleware.
-Omit `team:` to read `CF_ACCESS_TEAM` from the Worker environment.
-Before calling the app, it stores the decoded identity in `env["cloudflare.identity"]`,
-with `email`, `user_uuid` and `raw_data`. The generated example wraps only `/access`.
-The helper `Cloudflare::Access.get_identity(token, team: "my-team")` calls
-`Cloudflare.fetch` from Ruby. Missing/invalid configuration returns 503; missing/invalid
-cookies and Access 401/403 responses return 401; upstream/protocol failures return 502.
-Failures do not call the downstream app. This does not locally validate JWT signatures or audience.
-Protect your application with Access and follow Cloudflare's token validation guidance.
-The default Worker and mruby-rack revisions include Access, cookie parsing and
-middleware keyword forwarding. No local mrbgem checkout overrides are required.
-
-Keep secrets in `.dev.vars` locally and use `npx wrangler secret put NAME` remotely.
-Never put them in `app.rb`, `build_config.rb` or committed config files.
-
-For named environments, set `CLOUDFLARE_ENV=staging npm run dev` (or `npm run deploy`)
-so Wrangler and the binding registry select the same environment. Do not select an
-environment using only `--env`; custom build processes need `CLOUDFLARE_ENV` too.
-
-Commit `Gemfile.lock` and `package-lock.json`. Deploy explicitly with `npm run deploy`.
+Commit `Gemfile.lock` and `package-lock.json`. Deployment is separate from local
+development and uses `npm run deploy`.

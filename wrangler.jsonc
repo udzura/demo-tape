@@ -5,31 +5,10 @@
   "compatibility_date": "2026-08-22",
   "build": {
     "command": "bundle exec rake build",
-    "watch_dir": ["app.rb", "build_config.rb"]
+    "watch_dir": ["app.rb", "build_config.rb", "mgems"]
   },
   "rules": [
     { "type": "Data", "globs": ["**/*.bin"], "fallthrough": true }
-  ],
-  "kv_namespaces": [
-    { "binding": "CACHE_KV" }
-  ],
-  "queues": {
-    "producers": [
-      { "binding": "EVENTS", "queue": "events" }
-    ]
-  },
-  "durable_objects": {
-    "bindings": [
-      { "name": "OBJECTS", "class_name": "PicoRubyDurableObject" }
-    ]
-  },
-  "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["PicoRubyDurableObject"] }
-  ],
-  "vars": {
-    // Set your team name (the prefix of <team>.cloudflareaccess.com).
-    "CF_ACCESS_TEAM": "",
-    "GREETING": "Hello from PicoRuby on Cloudflare!"
-  }
-  // Keep secrets out of this file; use .dev.vars and wrangler secret put.
+  ]
+  // Add bindings here when tools need Cloudflare services.
 }
