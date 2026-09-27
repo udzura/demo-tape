@@ -25,6 +25,17 @@ Wrangler serves the MCP endpoint at `http://127.0.0.1:8787/mcp`. It runs the
 PicoRuby build on startup and watches `app.rb`, `build_config.rb`, and `mgems`.
 Run `npm run test:dev` in another terminal to exercise the live endpoint.
 
+The `ask_ai` tool sends its required `question` argument to Cloudflare Workers
+AI through the `AI` binding. It uses
+`@cf/meta/llama-3.3-70b-instruct-fp8-fast` and returns the generated text.
+The binding runs remotely during local development too, so calling this tool
+requires Cloudflare authentication and uses Workers AI quota. The local smoke
+test checks tool discovery but does not call the model.
+Run `ruby test/ask_ai.rb` to verify the Ruby tool's binding call with a local
+stand-in for Workers AI.
+If Cloudflare Access protects the Worker, Wrangler also needs an Access login
+for its remote binding connection during local development.
+
 ## Ruby DSL
 
 ```ruby

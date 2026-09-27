@@ -37,8 +37,9 @@ assert.deepEqual(Object.keys(discovery.body.result.capabilities).sort(), ["resou
 
 const tools = await request("tools/list");
 assert.equal(tools.status, 200);
-assert.equal(tools.body.result.tools[0].name, "hello");
-assert.deepEqual(tools.body.result.tools[0].inputSchema.required, ["name"]);
+assert.deepEqual(tools.body.result.tools.map((tool) => tool.name), ["ask_ai", "hello"]);
+assert.deepEqual(tools.body.result.tools[0].inputSchema.required, ["question"]);
+assert.deepEqual(tools.body.result.tools[1].inputSchema.required, ["name"]);
 
 const greeting = await request("tools/call", { name: "hello", arguments: { name: "PicoRuby" } });
 assert.equal(greeting.status, 200);
@@ -101,7 +102,7 @@ const legacyTools = await fetch(url, {
 });
 assert.equal(legacyTools.status, 200);
 const legacyList = (await legacyTools.json()).result;
-assert.equal(legacyList.tools[0].name, "hello");
+assert.equal(legacyList.tools[0].name, "ask_ai");
 assert.equal("resultType" in legacyList, false);
 
 const legacyCall = await fetch(url, {

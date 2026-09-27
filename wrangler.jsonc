@@ -9,6 +9,6 @@
   },
   "rules": [
     { "type": "Data", "globs": ["**/*.bin"], "fallthrough": true }
-  ]
-  // Add bindings here when tools need Cloudflare services.
+  ],
+  "ai": { "binding": "AI", "remote": true }
 }
