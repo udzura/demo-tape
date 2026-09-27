@@ -70,9 +70,36 @@ responses only; it does not implement prompts, SSE, or subscriptions.
 
 The endpoint accepts only `localhost` and `127.0.0.1` Host headers by default.
 For another hostname, set `MCP_ALLOWED_HOSTS` to a comma-separated list of
-hostnames. The endpoint has no authentication and is intended for local
-development. Add authentication before deploying a server that exposes private
-data or actions.
+hostnames.
+
+## Authentication with Cloudflare Access
+
+Local `npm run dev` remains available on loopback without authentication. To
+protect a deployed Worker, use Cloudflare Access in front of the entire Worker:
+
+1. Deploy the Worker, then open **Workers & Pages → demo-tape → Access** in the
+   Cloudflare dashboard. Choose **Protect this Worker behind Access** and
+   **All traffic**, then add an Allow policy for the intended users. This
+   protects its `workers.dev` URL, custom domains, routes, and previews.
+2. In **Zero Trust → Access controls → Applications**, edit the resulting
+   self-hosted Access application. Enable **Managed OAuth** under **Advanced
+   settings**. Allow the MCP client's exact OAuth redirect URI; for local Codex
+   clients, enable the localhost or loopback redirect option as needed.
+3. Set the Worker's `MCP_ALLOWED_HOSTS` variable to its public hostname. Connect
+   an OAuth-capable MCP client to `https://<hostname>/mcp` and complete the
+   Access sign-in. No Access credentials need to be stored in this repository.
+
+Managed OAuth gives non-browser MCP clients an OAuth challenge instead of a
+browser login redirect. The client must support OAuth resource indicators
+(RFC 8707). Before connecting a client, check that an unauthenticated request
+to the public `/mcp` endpoint gets an Access `401` response with a
+`WWW-Authenticate` header. Access runs before the Worker, so the Ruby handlers
+only receive requests allowed by its policy. This configuration is performed
+in Cloudflare; `npm run dev` does not emulate it.
+
+See Cloudflare's [Worker Access setup](https://developers.cloudflare.com/workers/configuration/cloudflare-access/)
+and [Managed OAuth setup](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/managed-oauth/)
+for the dashboard settings.
 
 ## Build configuration
 
