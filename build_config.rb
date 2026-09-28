@@ -11,7 +11,7 @@ MRuby::CrossBuild.new("worker") do |conf|
     # cf.mruby_rack_mgem_revision = "<commit SHA>"
   end
 
-  conf.gem gemdir: File.join(__dir__, "mgems/picoruby-pavement")
+  conf.gem gemdir: File.expand_path(ENV.fetch("PAVEMENT_ROOT", "../picoruby-pavement"), __dir__)
 
   conf.worker_export(
     app: "app.rb",

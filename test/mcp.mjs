@@ -34,6 +34,7 @@ const discovery = await request("server/discover");
 assert.equal(discovery.status, 200);
 assert.deepEqual(discovery.body.result.supportedVersions, [version]);
 assert.deepEqual(Object.keys(discovery.body.result.capabilities).sort(), ["resources", "tools"]);
+assert.equal(discovery.body.result._meta["io.modelcontextprotocol/serverInfo"].name, "demo-tape");
 
 const tools = await request("tools/list");
 assert.equal(tools.status, 200);

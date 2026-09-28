@@ -1,6 +1,6 @@
 require "json"
 require "stringio"
-require_relative "../mgems/picoruby-pavement/mrblib/pavement"
+require_relative "../../picoruby-pavement/mrblib/pavement"
 
 module Cloudflare
   class AI; end
@@ -31,8 +31,7 @@ class FakeBindings
     @ai = ai
   end
 
-  def binding(name, type)
-    raise "wrong binding" unless name == "AI" && type == Cloudflare::AI
+  def AI
     @ai
   end
 end

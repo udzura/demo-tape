@@ -1,4 +1,6 @@
 class Application < Pavement::Base
+  server_info name: "demo-tape", version: "0.1.0"
+
   tool "hello" do
     description "Greet someone from PicoRuby on Cloudflare Workers"
     input do

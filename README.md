@@ -1,7 +1,7 @@
 # demo-tape
 
 A small MCP server written in PicoRuby and served by Cloudflare Workers. The
-Ruby framework lives in [`mgems/picoruby-pavement`](mgems/picoruby-pavement), and
+Ruby framework lives in the sibling [picoruby-pavement](https://github.com/udzura/picoruby-pavement) project, and
 [`app.rb`](app.rb) defines a `hello` tool and a `demo://about` resource.
 
 ## Run locally
@@ -9,7 +9,8 @@ Ruby framework lives in [`mgems/picoruby-pavement`](mgems/picoruby-pavement), an
 Install Ruby 3.2 or later, Node.js supported by Wrangler, Emscripten, and a
 nightly Rust toolchain with the `wasm32-unknown-emscripten` target. The Worker
 uses `mruby-jsonrs` for JSON parsing and generation. Set
-`PICORUBY_ROOT` to a PicoRuby checkout with initialized submodules. The first
+`PICORUBY_ROOT` to a PicoRuby checkout with initialized submodules. Clone
+`picoruby-pavement` next to `demo-tape`, or set `PAVEMENT_ROOT` to its path. The first
 build compiles PicoRuby to Wasm and can take several minutes.
 
 ```sh
@@ -22,7 +23,8 @@ npm run dev
 ```
 
 Wrangler serves the MCP endpoint at `http://127.0.0.1:8787/mcp`. It runs the
-PicoRuby build on startup and watches `app.rb`, `build_config.rb`, and `mgems`.
+PicoRuby build on startup and watches `app.rb` and `build_config.rb`. Restart
+Wrangler after editing the sibling mgem.
 Run `npm run test:dev` in another terminal to exercise the live endpoint.
 
 The `ask_ai` tool sends its required `question` argument to Cloudflare Workers

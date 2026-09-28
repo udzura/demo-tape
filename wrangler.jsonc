@@ -5,7 +5,7 @@
   "compatibility_date": "2026-08-22",
   "build": {
     "command": "bundle exec rake build",
-    "watch_dir": ["app.rb", "build_config.rb", "mgems"]
+    "watch_dir": ["app.rb", "build_config.rb"]
   },
   "rules": [
     { "type": "Data", "globs": ["**/*.bin"], "fallthrough": true }
