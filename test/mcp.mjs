@@ -38,9 +38,10 @@ assert.equal(discovery.body.result._meta["io.modelcontextprotocol/serverInfo"].n
 
 const tools = await request("tools/list");
 assert.equal(tools.status, 200);
-assert.deepEqual(tools.body.result.tools.map((tool) => tool.name), ["ask_ai", "hello"]);
+assert.deepEqual(tools.body.result.tools.map((tool) => tool.name), ["ask_ai", "hello", "sum"]);
 assert.deepEqual(tools.body.result.tools[0].inputSchema.required, ["question"]);
 assert.deepEqual(tools.body.result.tools[1].inputSchema.required, ["name"]);
+assert.deepEqual(tools.body.result.tools[2].outputSchema.required, ["sum"]);
 
 const greeting = await request("tools/call", { name: "hello", arguments: { name: "PicoRuby" } });
 assert.equal(greeting.status, 200);
@@ -48,6 +49,11 @@ assert.equal(greeting.body.result.content[0].text, "Hello, PicoRuby!");
 
 const shouted = await request("tools/call", { name: "hello", arguments: { name: "PicoRuby", shout: true } });
 assert.equal(shouted.body.result.content[0].text, "HELLO, PICORUBY!");
+
+const sum = await request("tools/call", { name: "sum", arguments: { left: 2, right: 3 } });
+assert.equal(sum.status, 200);
+assert.deepEqual(sum.body.result.structuredContent, { sum: 5 });
+assert.deepEqual(JSON.parse(sum.body.result.content[0].text), { sum: 5 });
 
 const missing = await request("tools/call", { name: "hello", arguments: {} });
 assert.equal(missing.status, 400);

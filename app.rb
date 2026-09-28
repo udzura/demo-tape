@@ -22,6 +22,20 @@ class Application < Pavement::Base
     end
   end
 
+  tool "sum" do
+    description "Add two integers and return a structured result"
+    input do
+      integer :left, required: true
+      integer :right, required: true
+    end
+    output do
+      integer :sum, required: true
+    end
+    call do |left:, right:|
+      { sum: left + right }
+    end
+  end
+
   def ask_ai(question)
     model = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
     ai = env["cloudflare.env"].AI

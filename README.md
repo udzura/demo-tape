@@ -38,6 +38,10 @@ stand-in for Workers AI.
 If Cloudflare Access protects the Worker, Wrangler also needs an Access login
 for its remote binding connection during local development.
 
+The `sum` tool demonstrates Pavement's optional `output` DSL. It returns a Hash
+with an integer `sum`, which Pavement validates and sends as structured MCP
+content alongside JSON text.
+
 ## Ruby DSL
 
 ```ruby
