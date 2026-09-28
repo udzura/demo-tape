@@ -43,6 +43,13 @@ stand-in for Workers AI.
 If Cloudflare Access protects the Worker, Wrangler also needs an Access login
 for its remote binding connection during local development.
 
+The `slow_progress` tool makes three sequential requests to
+`https://httpbin.org/delay/1`. With a client `progressToken`, it sends an
+initial progress notification and one after each response, then returns the
+number of successful requests as structured content. While `npm run dev` is
+running, use `npm run test:progress` to exercise its SSE response. This test
+calls the public httpbin service and takes several seconds.
+
 The `sum` tool demonstrates Pavement's optional `output` DSL. It returns a Hash
 with an integer `sum`, which Pavement validates and sends as structured MCP
 content alongside JSON text.
@@ -91,8 +98,9 @@ JSON Schema and validates tool arguments before calling Ruby. The framework
 handles JSON-RPC and JSON responses for the MCP 2026-07-28 Streamable HTTP
 revision: `server/discover`, `tools/list`, `tools/call`, `resources/list`, and
 `resources/read`. It also accepts the 2025-03-26, 2025-06-18, and 2025-11-25
-Streamable HTTP handshake for current clients. This first demo uses JSON
-responses only; it does not implement prompts, SSE, or subscriptions.
+Streamable HTTP handshake for current clients. Progress-enabled tool calls
+use SSE when the client supplies a progress token. Prompts and subscriptions
+are not implemented.
 
 The endpoint accepts only `localhost` and `127.0.0.1` Host headers by default.
 For another hostname, set `MCP_ALLOWED_HOSTS` to a comma-separated list of

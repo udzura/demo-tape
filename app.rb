@@ -36,10 +36,28 @@ class Application < Pavement::Base
     end
   end
 
+  tool "slow_progress" do
+    description "Show progress while making three delayed HTTP requests"
+    enable :progress
+    output { integer :completed, required: true }
+    call { run_slow_progress }
+  end
+
   def ask_ai(question)
     model = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
     ai = env["cloudflare.env"].AI
     ai.generate(model, { "prompt" => question, "max_tokens" => 256 }).response
+  end
+
+  def run_slow_progress
+    total = 3
+    progress(0, total: total, message: "Starting delayed requests")
+    total.times do |index|
+      response = Cloudflare.fetch("https://httpbin.org/delay/1")
+      raise "httpbin returned HTTP #{response.status}" unless response.status == 200
+      progress(index + 1, total: total, message: "Completed #{index + 1} of #{total} requests")
+    end
+    { completed: total }
   end
 
   resource "demo://about" do
