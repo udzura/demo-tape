@@ -27,6 +27,11 @@ PicoRuby build on startup and watches `app.rb` and `build_config.rb`. Restart
 Wrangler after editing the sibling mgem.
 Run `npm run test:dev` in another terminal to exercise the live endpoint.
 
+To try Ruby-generated streaming instead of the MCP app, run
+`DEMO_TAPE_APP=stream_app.rb npm run dev` and then
+`curl -N http://127.0.0.1:8787/stream`. The sample sends 30 SSE chunks from
+a Ruby block. Restart without `DEMO_TAPE_APP` to restore the MCP app.
+
 The `ask_ai` tool sends its required `question` argument to Cloudflare Workers
 AI through the `AI` binding. It uses
 `@cf/meta/llama-3.3-70b-instruct-fp8-fast` and returns the generated text.
