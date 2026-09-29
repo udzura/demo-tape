@@ -10,7 +10,8 @@ MRuby::CrossBuild.new("worker") do |conf|
     # cf.mruby_rack_mgem_revision = "<commit SHA>"
   end
 
-  conf.gem gemdir: File.expand_path(ENV.fetch("PAVEMENT_ROOT", "../picoruby-pavement"), __dir__)
+  # conf.gem gemdir: File.expand_path(ENV.fetch("PAVEMENT_ROOT", "../picoruby-pavement"), __dir__)
+  conf.gem github: "udzura/picoruby-pavement", checksum_hash: "0.1.0"
 
   conf.worker_export(
     app: ENV.fetch("DEMO_TAPE_APP", "app.rb"),
